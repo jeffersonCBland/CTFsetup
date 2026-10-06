@@ -16,7 +16,18 @@
 # most recent version of that image when you build your Dockerfile.
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM gcc:latest AS builder
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+
+WORKDIR /build
+
+COPY . . 
+
+RUN gcc -o stackInjection stackInjection.c
 
 ################################################################################
 # Create a stage for building/compiling the application.
@@ -26,11 +37,15 @@ FROM gcc:latest AS builder
 # would issue a RUN command for your application's build process to generate the
 # executable. For language-specific examples, take a look at the Dockerfiles in
 # the Awesome Compose repository: https://github.com/docker/awesome-compose
-WORKDIR /usr/CTF/stackInjection
+FROm python:3.12-slim
 
-COPY stackInection.c .
-RUN gcc -o stackInjection stackInjection.c
+WORKDIR /app
 
+COPY --from=builder /build/stackInjection .
+COPY --from=builder /build/wheels /usr/local/lib/python3.12/site-packages
+
+
+CMD ["./stackInjection"]
 
 
 
